@@ -147,3 +147,38 @@ func _on_navigate_unit_to_rally_point(unit, rally_point):
 		_navigate_unit_towards_unit(unit, rally_point.target_unit)
 	elif rally_point.global_position != rally_point.get_parent().global_position:
 		unit.action = Actions.Moving.new(rally_point.global_position)
+
+
+func _try_attacking_selected_units_towards_position(target_point):
+	var selected_units = get_tree().get_nodes_in_group("selected_units").filter(
+		func(unit): return unit.is_in_group("controlled_units")
+	)
+
+	if selected_units.is_empty():
+		return
+
+	var nearby_enemies = _find_nearby_enemies(target_point)
+
+	if not nearby_enemies.is_empty():
+		_navigate_selected_units_towards_unit(nearby_enemies[0])
+	else:
+		_try_navigating_selected_units_towards_position(target_point)
+
+
+func _find_nearby_enemies(position: Vector3) -> Array:
+	var nearby_enemies = []
+	var search_radius = 20.0
+
+	var all_units = get_tree().get_nodes_in_group("units")
+	for unit in all_units:
+		if not unit.is_in_group("adversary_units"):
+			continue
+		var distance = position.distance_to(unit.global_position)
+		if distance <= search_radius:
+			nearby_enemies.append(unit)
+
+	nearby_enemies.sort_custom(
+		func(a, b): return position.distance_to(a.global_position) < position.distance_to(b.global_position)
+	)
+
+	return nearby_enemies
